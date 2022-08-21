@@ -27,7 +27,9 @@ class PassportAuthController extends Controller
         $user->password = bcrypt($request->password);
         $user->phone = $request->phone;
         $user->nickname = $request->nickname;
-        $user->type=$request->type;
+//        $user->type=$request->type;
+//        tipo de usuario debe ser 0 por defecto
+        $user->type=0;
         $user->save();
 
         $token = $user->createToken('PassportAuth')->accessToken;
@@ -56,7 +58,7 @@ class PassportAuthController extends Controller
     public function userInfo()
     {
 
-     $user = auth()->user()->name;
+     $user = auth()->user();
 
      return response()->json( $user, 200);
 
