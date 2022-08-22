@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePostRequest;
 use App\Http\Requests\UpdatePostRequest;
 use App\Models\Post;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class PostController extends Controller
 {
@@ -21,24 +23,21 @@ class PostController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
      * Store a newly created resource in storage.
      *
      * @param  \App\Http\Requests\StorePostRequest  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(StorePostRequest $request)
+    public function store(Request $request)
     {
-        //
+        $post = new Post();
+        $post->title = $request->title;
+        $path = $request->img->store('');
+        $img = Storage::url($path);
+        $post->img = $img;
+        $post->save();
+
+        return response()->json($post, 201);
     }
 
     /**
