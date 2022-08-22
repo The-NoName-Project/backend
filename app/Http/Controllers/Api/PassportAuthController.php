@@ -21,20 +21,19 @@ class PassportAuthController extends Controller
             'nickname' => 'required|min:4',
         ]);
 
-        $user=new User;
-        $user->name = $request->name;
-        $user->email = $request->email;
-        $user->password = bcrypt($request->password);
-        $user->phone = $request->phone;
-        $user->nickname = $request->nickname;
-//        $user->type=$request->type;
-//        tipo de usuario debe ser 0 por defecto
-        $user->type=0;
-        $user->save();
+        $user=User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => bcrypt($request->password),
+            'phone' => $request->phone,
+            'nickname' => $request->nickname,
+            //tipo de usuario siempre sera 0
+            'type' => 0,
+        ]);
 
         $token = $user->createToken('PassportAuth')->accessToken;
 
-        return response()->json(['token' => $token], 200);
+        return response()->json(['token' => $token, 'user' => $user], 201);
     }
 
     /**
@@ -48,8 +47,12 @@ class PassportAuthController extends Controller
         ];
 
         if (auth()->attempt($data)) {
-            $token = auth()->user()->createToken('Laravel-9-Passport-Auth')->accessToken;
-            return response()->json(['token' => $token], 200);
+            //obtiene los datos del usuario sin necesidad de pasarle el token
+            $user = auth()->user();
+            $token = $user->createToken('PassportAuth')->accessToken;
+            return response()->json(['token' => $token, 'user' => $user], 200);
+            // $token = auth()->user()->createToken('Laravel-9-Passport-Auth')->accessToken;
+            // return response()->json(['token' => $token, 'user' => ], 200);
         } else {
             return response()->json(['error' => 'Unauthorised'], 401);
         }
@@ -57,10 +60,44 @@ class PassportAuthController extends Controller
 
     public function userInfo()
     {
-
      $user = auth()->user();
-
      return response()->json( $user, 200);
-
     }
+
+    /**
+     * Rescure password
+     */
+
+    public function resetPassword(Request $request)
+    {
+        $this->validate($request, [
+            'email' => 'required|email',
+        ]);
+        $user = User::where('email', $request->email)->first();
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+        $user->sendPasswordResetNotification($request->email);
+        return response()->json(['message' => 'Reset password link sent to your email'], 200);
+    }
+
+    /**
+     * Reset password
+     */
+    public function resetPasswordConfirm(Request $request)
+    {
+        $this->validate($request, [
+            'email' => 'required|email',
+            'password' => 'required|min:8',
+            'token' => 'required',
+        ]);
+        $user = User::where('email', $request->email)->first();
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+        $user->password = bcrypt($request->password);
+        $user->save();
+        return response()->json(['message' => 'Password reset successfully'], 200);
+    }
+
 }
